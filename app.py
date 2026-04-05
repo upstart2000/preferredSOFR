@@ -4,16 +4,33 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import dateutil.relativedelta as rd
 
-# --- 1. SOFR DATA ENGINE ---
-# Applied Logic: Spread + 0.26161% (CAS) for LIBOR-transitioned tickers.
-# ADAML (6.13%) stays native as it was issued as a SOFR security.
+# --- 1. MASTER SOFR DATA ENGINE ---
+# CAS (0.0026161) added to all except ADAM family
 SOFR_DATA = {
-    'AGNCP': {'spread': 0.0510 + 0.0026161, 'yahoo': 'AGNCP',  'ref_ex': '03/01/2024', 'pay_day': 15},
+    'AGNCM': {'spread': 0.0516 + 0.0026161, 'yahoo': 'AGNCM',  'ref_ex': '03/31/2024', 'pay_day': 15},
+    'AGNCN': {'spread': 0.0463 + 0.0026161, 'yahoo': 'AGNCN',  'ref_ex': '03/31/2024', 'pay_day': 15},
+    'AGNCO': {'spread': 0.0496 + 0.0026161, 'yahoo': 'AGNCO',  'ref_ex': '03/31/2024', 'pay_day': 15},
+    'AGNCP': {'spread': 0.0510 + 0.0026161, 'yahoo': 'AGNCP',  'ref_ex': '03/31/2024', 'pay_day': 15},
     'NLY-F': {'spread': 0.0499 + 0.0026161, 'yahoo': 'NLY-PF', 'ref_ex': '03/01/2024', 'pay_day': 15},
     'NLY-G': {'spread': 0.0417 + 0.0026161, 'yahoo': 'NLY-PG', 'ref_ex': '02/28/2024', 'pay_day': 15},
     'NLY-I': {'spread': 0.0499 + 0.0026161, 'yahoo': 'NLY-PI', 'ref_ex': '03/01/2024', 'pay_day': 15},
-    'PMT-C': {'spread': 0.0507 + 0.0026161, 'yahoo': 'PMT-PC', 'ref_ex': '02/28/2024', 'pay_day': 15},
-    'ADAML': {'spread': 0.0613,            'yahoo': 'ADAML',  'ref_ex': '03/15/2024', 'pay_day': 15}
+    'DX-C':  {'spread': 0.0546 + 0.0026161, 'yahoo': 'DX-PC',  'ref_ex': '03/28/2024', 'pay_day': 15},
+    'RITM-A':{'spread': 0.0580 + 0.0026161, 'yahoo': 'RITM-PA', 'ref_ex': '02/28/2024', 'pay_day': 15},
+    'RITM-B':{'spread': 0.0564 + 0.0026161, 'yahoo': 'RITM-PB', 'ref_ex': '02/28/2024', 'pay_day': 15},
+    'RITM-C':{'spread': 0.0491 + 0.0026161, 'yahoo': 'RITM-PC', 'ref_ex': '02/28/2024', 'pay_day': 15},
+    'PMT-A': {'spread': 0.0583 + 0.0026161, 'yahoo': 'PMT-PA',  'ref_ex': '02/28/2024', 'pay_day': 15},
+    'PMT-B': {'spread': 0.0566 + 0.0026161, 'yahoo': 'PMT-PB',  'ref_ex': '02/28/2024', 'pay_day': 15},
+    'MFA-C': {'spread': 0.0534 + 0.0026161, 'yahoo': 'MFA-PC',  'ref_ex': '03/28/2024', 'pay_day': 15},
+    'CIM-B': {'spread': 0.0580 + 0.0026161, 'yahoo': 'CIM-PB',  'ref_ex': '02/28/2024', 'pay_day': 15},
+    'CIM-C': {'spread': 0.0507 + 0.0026161, 'yahoo': 'CIM-PC',  'ref_ex': '02/28/2024', 'pay_day': 15},
+    'CIM-D': {'spread': 0.0497 + 0.0026161, 'yahoo': 'CIM-PD',  'ref_ex': '02/28/2024', 'pay_day': 15},
+    'IVR-C': {'spread': 0.0528 + 0.0026161, 'yahoo': 'IVR-PC',  'ref_ex': '03/14/2024', 'pay_day': 15},
+    'CHMI-B':{'spread': 0.0599 + 0.0026161, 'yahoo': 'CHMI-PB', 'ref_ex': '03/14/2024', 'pay_day': 15},
+    'MITT-C':{'spread': 0.0648 + 0.0026161, 'yahoo': 'MITT-PC', 'ref_ex': '03/14/2024', 'pay_day': 15},
+    'GPMT-A':{'spread': 0.0583 + 0.0026161, 'yahoo': 'GPMT-PA', 'ref_ex': '03/14/2024', 'pay_day': 15},
+    'ADAMM': {'spread': 0.0647,             'yahoo': 'ADAMM',  'ref_ex': '03/15/2024', 'pay_day': 15},
+    'ADAML': {'spread': 0.0613,             'yahoo': 'ADAML',  'ref_ex': '03/15/2024', 'pay_day': 15},
+    'ADAMN': {'spread': 0.0592,             'yahoo': 'ADAMN',  'ref_ex': '03/15/2024', 'pay_day': 15}
 }
 
 def get_next_dates(ref_ex_str, pay_day_target):
