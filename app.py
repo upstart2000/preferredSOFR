@@ -11,8 +11,7 @@ from bs4 import BeautifulSoup
 def fetch_cme_sofr():
     """Attempts to visually extract the 3M Term SOFR from CME Group."""
     try:
-        # Note: Scrapers can be blocked by CME's firewall. 
-        # This function is structured to fall back safely.
+        # Placeholder for the automated extraction logic from the CME URL
         return 3.67854 
     except:
         return 3.68000 
@@ -76,7 +75,7 @@ with row1_col1:
 with row1_col2:
     hist_sofr = st.number_input("Last Reset Term SOFR (%)", value=fwd_sofr, step=0.00001, format="%.5f")
 with row1_col3:
-    increment = st.number_input("Increment (BPS)", value=50, step=10)
+    increment_bps = st.number_input("Increment (BPS)", value=50, step=10)
 
 st.markdown(
     f"<p style='font-size: 0.78rem; color: #808495; margin-top: -18px; margin-bottom: 20px;'>"
@@ -88,22 +87,24 @@ st.markdown(
 # --- 5. DATA PROCESSING ---
 today = datetime.now()
 main_rows = []
+sens_rows = []
+inc_dec = increment_bps / 10000  
+target_rates = [(fwd_sofr/100) + (i * inc_dec) for i in range(-2, 3)]
 
 for ticker, info in SOFR_DATA.items():
     try:
-        # Fetching price from Yahoo
         price = float(yf.Ticker(info['yahoo']).history(period="1d")['Close'].iloc[-1])
     except: price = 25.0
     
     next_ex, next_pay = get_next_dates(info['ref_ex'], info['pay_day'])
     prior_ex = next_ex - rd.relativedelta(months=3)
     
-    # Accrual Calculation (Last Reset Rate)
+    # Accrual (Last Reset Rate)
     curr_coupon_rate = (hist_sofr / 100) + info['spread']
     days_accrued = get_30_360_days(prior_ex, today.date())
     accrued = (25 * curr_coupon_rate) * (days_accrued / 360)
     
-    # Yield Calculation (Current Forward Rate)
+    # Forward (Current Rate)
     fwd_coupon_rate = (fwd_sofr / 100) + info['spread']
     clean_p = price - accrued
     yld = (fwd_coupon_rate * 25) / clean_p if clean_p > 0 else 0
@@ -121,20 +122,21 @@ for ticker, info in SOFR_DATA.items():
         "Next Pay": next_pay
     })
 
+    # Sensitivity Logic
+    s_row = {"Ticker": ticker}
+    for r in target_rates:
+        label = f"{r*100:.2f}% SOFR"
+        s_yld = ((r + info['spread']) * 25) / clean_p if clean_p > 0 else 0
+        s_row[label] = s_yld * 100
+    sens_rows.append(s_row)
+
 # --- 6. RENDER DASHBOARD ---
-st.dataframe(
-    pd.DataFrame(main_rows), 
-    use_container_width=True, 
-    hide_index=True,
-    column_config={
-        "Coupon (Locked)": st.column_config.NumberColumn(format="%.4f%%"),
-        "Price": st.column_config.NumberColumn(format="$%.2f"),
-        "Accrued": st.column_config.NumberColumn(format="$%.3f"),
-        "Full Qtr Div": st.column_config.NumberColumn(format="$%.3f"),
-        "Clean Price": st.column_config.NumberColumn(format="$%.2f"),
-        "Curr Yield": st.column_config.NumberColumn(format="%.2f%%"),
-        "Spread (+CAS)": st.column_config.NumberColumn(format="%.4f%%"),
-        "Next Ex-Div": st.column_config.DateColumn(format="MM/DD/YYYY"),
-        "Next Pay": st.column_config.DateColumn(format="MM/DD/YYYY"),
-    }
-)
+st.subheader("Portfolio Performance")
+st.dataframe(pd.DataFrame(main_rows), use_container_width=True, hide_index=True)
+
+st.divider()
+
+st.subheader(f"Yield Sensitivity (Forward @ {fwd_sofr:.5f}% SOFR)")
+df_sens = pd.DataFrame(sens_rows)
+sens_config = {col: st.column_config.NumberColumn(format="%.2f%%") for col in df_sens.columns if col != "Ticker"}
+st.dataframe(df_sens, use_container_width=True, hide_index=True, column_config=sens_config)
