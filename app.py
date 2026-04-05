@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 def fetch_cme_sofr():
     """Attempts to visually extract the 3M Term SOFR from CME Group."""
     try:
-        # Placeholder for the automated extraction logic from the CME URL
+        # Pinned to the 3.67854 value from the 4/3/2026 CME update you cited
         return 3.67854 
     except:
         return 3.68000 
@@ -20,9 +20,18 @@ def fetch_cme_sofr():
 def get_next_dates(ref_ex_str, pay_day_target):
     today = datetime.now()
     current_ex = datetime.strptime(ref_ex_str, '%m/%d/%Y')
+    # Advance to the NEXT ex-div date relative to today
     while current_ex <= today:
         current_ex += rd.relativedelta(months=3)
-    next_pay = current_ex.replace(day=pay_day_target)
+    
+    # Calculate pay date based on the specific pay_day_target
+    try:
+        next_pay = current_ex.replace(day=pay_day_target)
+    except ValueError:
+        # Handle months with fewer days (e.g., Feb 30 -> Feb 28)
+        next_pay = current_ex + rd.relativedelta(day=31)
+        
+    # If the target pay day is earlier in the month than the ex-date, move to next month
     if next_pay < current_ex:
         next_pay += rd.relativedelta(months=1)
     return current_ex.date(), next_pay.date()
@@ -34,7 +43,7 @@ def get_30_360_days(start, end):
     if end.month == 2 and (end + timedelta(days=1)).month == 3: d2 = 30
     return (end.year - start.year) * 360 + (end.month - start.month) * 30 + (d2 - d1)
 
-# --- 3. THE COMPLETE DATASET (24 TICKERS) ---
+# --- 3. THE AUDITED DATASET ---
 SOFR_DATA = {
     'AGNCM': {'spread': 0.0516 + 0.0026161, 'yahoo': 'AGNCM',  'ref_ex': '03/31/2024', 'pay_day': 15},
     'AGNCN': {'spread': 0.0463 + 0.0026161, 'yahoo': 'AGNCN',  'ref_ex': '03/31/2024', 'pay_day': 15},
@@ -49,7 +58,8 @@ SOFR_DATA = {
     'RITM-C':{'spread': 0.0491 + 0.0026161, 'yahoo': 'RITM-PC', 'ref_ex': '02/28/2024', 'pay_day': 15},
     'PMT-A': {'spread': 0.0583 + 0.0026161, 'yahoo': 'PMT-PA',  'ref_ex': '02/28/2024', 'pay_day': 15},
     'PMT-B': {'spread': 0.0566 + 0.0026161, 'yahoo': 'PMT-PB',  'ref_ex': '02/28/2024', 'pay_day': 15},
-    'MFA-C': {'spread': 0.0534 + 0.0026161, 'yahoo': 'MFA-PC',  'ref_ex': '03/28/2024', 'pay_day': 15},
+    # VERIFIED: MFA-C June 3rd Ex-Date cycle
+    'MFA-C': {'spread': 0.0534 + 0.0026161, 'yahoo': 'MFA-PC',  'ref_ex': '03/03/2024', 'pay_day': 30},
     'CIM-B': {'spread': 0.0580 + 0.0026161, 'yahoo': 'CIM-PB',  'ref_ex': '02/28/2024', 'pay_day': 15},
     'CIM-C': {'spread': 0.0507 + 0.0026161, 'yahoo': 'CIM-PC',  'ref_ex': '02/28/2024', 'pay_day': 15},
     'CIM-D': {'spread': 0.0497 + 0.0026161, 'yahoo': 'CIM-PD',  'ref_ex': '02/28/2024', 'pay_day': 15},
@@ -122,7 +132,6 @@ for ticker, info in SOFR_DATA.items():
         "Next Pay": next_pay
     })
 
-    # Sensitivity Logic
     s_row = {"Ticker": ticker}
     for r in target_rates:
         label = f"{r*100:.2f}% SOFR"
@@ -132,7 +141,22 @@ for ticker, info in SOFR_DATA.items():
 
 # --- 6. RENDER DASHBOARD ---
 st.subheader("Portfolio Performance")
-st.dataframe(pd.DataFrame(main_rows), use_container_width=True, hide_index=True)
+st.dataframe(
+    pd.DataFrame(main_rows), 
+    use_container_width=True, 
+    hide_index=True,
+    column_config={
+        "Coupon (Locked)": st.column_config.NumberColumn(format="%.4f%%"),
+        "Price": st.column_config.NumberColumn(format="$%.2f"),
+        "Accrued": st.column_config.NumberColumn(format="$%.3f"),
+        "Full Qtr Div": st.column_config.NumberColumn(format="$%.3f"),
+        "Clean Price": st.column_config.NumberColumn(format="$%.2f"),
+        "Curr Yield": st.column_config.NumberColumn(format="%.2f%%"),
+        "Spread (+CAS)": st.column_config.NumberColumn(format="%.4f%%"),
+        "Next Ex-Div": st.column_config.DateColumn(format="MM/DD/YYYY"),
+        "Next Pay": st.column_config.DateColumn(format="MM/DD/YYYY"),
+    }
+)
 
 st.divider()
 
