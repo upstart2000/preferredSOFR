@@ -3,38 +3,28 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 import dateutil.relativedelta as rd
-import requests
-from bs4 import BeautifulSoup
 
-# --- 1. CME EXTRACTION LOGIC ---
+# --- 1. CME EXTRACTION ---
 @st.cache_data(ttl=3600)
 def fetch_cme_sofr():
-    """Attempts to visually extract the 3M Term SOFR from CME Group."""
-    try:
-        # Pinned to the 3.67854 value from the 4/3/2026 CME update you cited
-        return 3.67854 
-    except:
-        return 3.68000 
+    return 3.67854 
 
 # --- 2. CORE UTILITIES ---
-def get_next_dates(ref_ex_str, pay_day_target):
+def get_next_dates(ref_ex_str, ref_pay_str):
+    """
+    Advances the specific Ex-Div (Col Q) and Pay Date (Col M) 
+    from the spreadsheet by 3-month increments.
+    """
     today = datetime.now()
-    current_ex = datetime.strptime(ref_ex_str, '%m/%d/%Y')
-    # Advance to the NEXT ex-div date relative to today
-    while current_ex <= today:
-        current_ex += rd.relativedelta(months=3)
+    curr_ex = datetime.strptime(ref_ex_str, '%m/%d/%Y')
+    curr_pay = datetime.strptime(ref_pay_str, '%m/%d/%Y')
     
-    # Calculate pay date based on the specific pay_day_target
-    try:
-        next_pay = current_ex.replace(day=pay_day_target)
-    except ValueError:
-        # Handle months with fewer days (e.g., Feb 30 -> Feb 28)
-        next_pay = current_ex + rd.relativedelta(day=31)
+    # Advance both dates in 3-month blocks until Ex-Div is in the future
+    while curr_ex <= today:
+        curr_ex += rd.relativedelta(months=3)
+        curr_pay += rd.relativedelta(months=3)
         
-    # If the target pay day is earlier in the month than the ex-date, move to next month
-    if next_pay < current_ex:
-        next_pay += rd.relativedelta(months=1)
-    return current_ex.date(), next_pay.date()
+    return curr_ex.date(), curr_pay.date()
 
 def get_30_360_days(start, end):
     d1 = min(start.day, 30)
@@ -43,33 +33,33 @@ def get_30_360_days(start, end):
     if end.month == 2 and (end + timedelta(days=1)).month == 3: d2 = 30
     return (end.year - start.year) * 360 + (end.month - start.month) * 30 + (d2 - d1)
 
-# --- 3. THE AUDITED DATASET ---
+# --- 3. THE AUDITED DATASET (COLS Q & M ALIGNMENT) ---
+# ref_ex = Col Q | ref_pay = Col M (Floating Start)
 SOFR_DATA = {
-    'AGNCM': {'spread': 0.0516 + 0.0026161, 'yahoo': 'AGNCM',  'ref_ex': '03/31/2024', 'pay_day': 15},
-    'AGNCN': {'spread': 0.0463 + 0.0026161, 'yahoo': 'AGNCN',  'ref_ex': '03/31/2024', 'pay_day': 15},
-    'AGNCO': {'spread': 0.0496 + 0.0026161, 'yahoo': 'AGNCO',  'ref_ex': '03/31/2024', 'pay_day': 15},
-    'AGNCP': {'spread': 0.0510 + 0.0026161, 'yahoo': 'AGNCP',  'ref_ex': '03/31/2024', 'pay_day': 15},
-    'NLY-F': {'spread': 0.0499 + 0.0026161, 'yahoo': 'NLY-PF', 'ref_ex': '03/01/2024', 'pay_day': 15},
-    'NLY-G': {'spread': 0.0417 + 0.0026161, 'yahoo': 'NLY-PG', 'ref_ex': '02/28/2024', 'pay_day': 15},
-    'NLY-I': {'spread': 0.0499 + 0.0026161, 'yahoo': 'NLY-PI', 'ref_ex': '03/01/2024', 'pay_day': 15},
-    'DX-C':  {'spread': 0.0546 + 0.0026161, 'yahoo': 'DX-PC',  'ref_ex': '03/28/2024', 'pay_day': 15},
-    'RITM-A':{'spread': 0.0580 + 0.0026161, 'yahoo': 'RITM-PA', 'ref_ex': '02/28/2024', 'pay_day': 15},
-    'RITM-B':{'spread': 0.0564 + 0.0026161, 'yahoo': 'RITM-PB', 'ref_ex': '02/28/2024', 'pay_day': 15},
-    'RITM-C':{'spread': 0.0491 + 0.0026161, 'yahoo': 'RITM-PC', 'ref_ex': '02/28/2024', 'pay_day': 15},
-    'PMT-A': {'spread': 0.0583 + 0.0026161, 'yahoo': 'PMT-PA',  'ref_ex': '02/28/2024', 'pay_day': 15},
-    'PMT-B': {'spread': 0.0566 + 0.0026161, 'yahoo': 'PMT-PB',  'ref_ex': '02/28/2024', 'pay_day': 15},
-    # VERIFIED: MFA-C June 3rd Ex-Date cycle
-    'MFA-C': {'spread': 0.0534 + 0.0026161, 'yahoo': 'MFA-PC',  'ref_ex': '03/03/2024', 'pay_day': 30},
-    'CIM-B': {'spread': 0.0580 + 0.0026161, 'yahoo': 'CIM-PB',  'ref_ex': '02/28/2024', 'pay_day': 15},
-    'CIM-C': {'spread': 0.0507 + 0.0026161, 'yahoo': 'CIM-PC',  'ref_ex': '02/28/2024', 'pay_day': 15},
-    'CIM-D': {'spread': 0.0497 + 0.0026161, 'yahoo': 'CIM-PD',  'ref_ex': '02/28/2024', 'pay_day': 15},
-    'IVR-C': {'spread': 0.0528 + 0.0026161, 'yahoo': 'IVR-PC',  'ref_ex': '03/14/2024', 'pay_day': 15},
-    'CHMI-B':{'spread': 0.0599 + 0.0026161, 'yahoo': 'CHMI-PB', 'ref_ex': '03/14/2024', 'pay_day': 15},
-    'MITT-C':{'spread': 0.0648 + 0.0026161, 'yahoo': 'MITT-PC', 'ref_ex': '03/14/2024', 'pay_day': 15},
-    'GPMT-A':{'spread': 0.0583 + 0.0026161, 'yahoo': 'GPMT-PA', 'ref_ex': '03/14/2024', 'pay_day': 15},
-    'ADAMM': {'spread': 0.0647,             'yahoo': 'ADAMM',  'ref_ex': '03/15/2024', 'pay_day': 15},
-    'ADAML': {'spread': 0.0613,             'yahoo': 'ADAML',  'ref_ex': '03/15/2024', 'pay_day': 15},
-    'ADAMN': {'spread': 0.0592,             'yahoo': 'ADAMN',  'ref_ex': '03/15/2024', 'pay_day': 15}
+    'AGNCM': {'spread': 0.0516 + 0.0026161, 'yahoo': 'AGNCM',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
+    'AGNCN': {'spread': 0.0463 + 0.0026161, 'yahoo': 'AGNCN',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
+    'AGNCO': {'spread': 0.0496 + 0.0026161, 'yahoo': 'AGNCO',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
+    'AGNCP': {'spread': 0.0510 + 0.0026161, 'yahoo': 'AGNCP',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
+    'NLY-F': {'spread': 0.0499 + 0.0026161, 'yahoo': 'NLY-PF', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
+    'NLY-G': {'spread': 0.0417 + 0.0026161, 'yahoo': 'NLY-PG', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
+    'NLY-I': {'spread': 0.0499 + 0.0026161, 'yahoo': 'NLY-PI', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
+    'DX-C':  {'spread': 0.0546 + 0.0026161, 'yahoo': 'DX-PC',  'ref_ex': '03/28/2024', 'ref_pay': '04/15/2024'},
+    'RITM-A':{'spread': 0.0580 + 0.0026161, 'yahoo': 'RITM-PA', 'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    'RITM-B':{'spread': 0.0564 + 0.0026161, 'yahoo': 'RITM-PB', 'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    'RITM-C':{'spread': 0.0491 + 0.0026161, 'yahoo': 'RITM-PC', 'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    'PMT-A': {'spread': 0.0583 + 0.0026161, 'yahoo': 'PMT-PA',  'ref_ex': '02/28/2024', 'ref_pay': '03/31/2024'},
+    'PMT-B': {'spread': 0.0566 + 0.0026161, 'yahoo': 'PMT-PB',  'ref_ex': '02/28/2024', 'ref_pay': '03/31/2024'},
+    'MFA-C': {'spread': 0.0534 + 0.0026161, 'yahoo': 'MFA-PC',  'ref_ex': '03/03/2024', 'ref_pay': '03/31/2024'},
+    'CIM-B': {'spread': 0.0580 + 0.0026161, 'yahoo': 'CIM-PB',  'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    'CIM-C': {'spread': 0.0507 + 0.0026161, 'yahoo': 'CIM-PC',  'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    'CIM-D': {'spread': 0.0497 + 0.0026161, 'yahoo': 'CIM-PD',  'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    'IVR-C': {'spread': 0.0528 + 0.0026161, 'yahoo': 'IVR-PC',  'ref_ex': '03/14/2024', 'ref_pay': '04/15/2024'},
+    'CHMI-B':{'spread': 0.0599 + 0.0026161, 'yahoo': 'CHMI-PB', 'ref_ex': '03/14/2024', 'ref_pay': '04/15/2024'},
+    'MITT-C':{'spread': 0.0648 + 0.0026161, 'yahoo': 'MITT-PC', 'ref_ex': '03/14/2024', 'ref_pay': '04/15/2024'},
+    'GPMT-A':{'spread': 0.0583 + 0.0026161, 'yahoo': 'GPMT-PA', 'ref_ex': '03/14/2024', 'ref_pay': '04/15/2024'},
+    'ADAMM': {'spread': 0.0647,             'yahoo': 'ADAMM',  'ref_ex': '03/15/2024', 'ref_pay': '04/15/2024'},
+    'ADAML': {'spread': 0.0613,             'yahoo': 'ADAML',  'ref_ex': '03/15/2024', 'ref_pay': '04/15/2024'},
+    'ADAMN': {'spread': 0.0592,             'yahoo': 'ADAMN',  'ref_ex': '03/15/2024', 'ref_pay': '04/15/2024'}
 }
 
 # --- 4. UI SETUP ---
@@ -77,7 +67,6 @@ st.set_page_config(page_title="3M Term SOFR Tracker", layout="wide")
 st.title("📈 3-Month Term SOFR Preferreds")
 
 cme_val = fetch_cme_sofr()
-
 row1_col1, row1_col2, row1_col3, _ = st.columns([1.5, 1.5, 1.5, 3])
 
 with row1_col1:
@@ -89,7 +78,7 @@ with row1_col3:
 
 st.markdown(
     f"<p style='font-size: 0.78rem; color: #808495; margin-top: -18px; margin-bottom: 20px;'>"
-    f"Note: Rates may not reflect real-time CME fixings. Please verify and update Current and Last Reset values manually for precise results."
+    f"Note: Rates may not reflect real-time CME fixings. Please verify values manually for precision."
     f"</p>", 
     unsafe_allow_html=True
 )
@@ -106,15 +95,14 @@ for ticker, info in SOFR_DATA.items():
         price = float(yf.Ticker(info['yahoo']).history(period="1d")['Close'].iloc[-1])
     except: price = 25.0
     
-    next_ex, next_pay = get_next_dates(info['ref_ex'], info['pay_day'])
+    # Use both spreadsheet columns to get next dates
+    next_ex, next_pay = get_next_dates(info['ref_ex'], info['ref_pay'])
     prior_ex = next_ex - rd.relativedelta(months=3)
     
-    # Accrual (Last Reset Rate)
     curr_coupon_rate = (hist_sofr / 100) + info['spread']
     days_accrued = get_30_360_days(prior_ex, today.date())
     accrued = (25 * curr_coupon_rate) * (days_accrued / 360)
     
-    # Forward (Current Rate)
     fwd_coupon_rate = (fwd_sofr / 100) + info['spread']
     clean_p = price - accrued
     yld = (fwd_coupon_rate * 25) / clean_p if clean_p > 0 else 0
