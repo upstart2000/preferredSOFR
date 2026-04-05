@@ -21,32 +21,38 @@ def get_30_360_days(start, end):
     if end.month == 2 and (end + timedelta(days=1)).month == 3: d2 = 30
     return (end.year - start.year) * 360 + (end.month - start.month) * 30 + (d2 - d1)
 
-# --- 2. THE AUDITED DATASET (19 TICKERS) ---
-# CAS constant: 0.261% (0.00261)
+# --- 2. AUDITED DATASET (Synced to Spreadsheet Col Q & M) ---
 CAS = 0.00261
 
 SOFR_DATA = {
-    'AGNCM': {'spread': 0.0516 + CAS, 'yahoo': 'AGNCM',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
-    'AGNCN': {'spread': 0.0463 + CAS, 'yahoo': 'AGNCN',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
-    'AGNCO': {'spread': 0.0496 + CAS, 'yahoo': 'AGNCO',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
-    'AGNCP': {'spread': 0.0510 + CAS, 'yahoo': 'AGNCP',  'ref_ex': '03/31/2024', 'ref_pay': '04/15/2024'},
+    # AGNC: Ex-Div is 1st of Jan/Apr/Jul/Oct. Pay is 15th.
+    'AGNCM': {'spread': 0.0516 + CAS, 'yahoo': 'AGNCM',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCN': {'spread': 0.0463 + CAS, 'yahoo': 'AGNCN',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCO': {'spread': 0.0496 + CAS, 'yahoo': 'AGNCO',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCP': {'spread': 0.0510 + CAS, 'yahoo': 'AGNCP',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    # NLY: Ex-Div is 1st. Pay is Month-End.
     'NLY-F': {'spread': 0.0499 + CAS, 'yahoo': 'NLY-PF', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
     'NLY-G': {'spread': 0.0417 + CAS, 'yahoo': 'NLY-PG', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
     'NLY-I': {'spread': 0.0499 + CAS, 'yahoo': 'NLY-PI', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
-    'DX-C':  {'spread': 0.0546 + CAS, 'yahoo': 'DX-PC',  'ref_ex': '03/28/2024', 'ref_pay': '04/15/2024'},
-    'RITM-A':{'spread': 0.0580 + CAS, 'yahoo': 'RITM-PA', 'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
-    'RITM-B':{'spread': 0.0564 + CAS, 'yahoo': 'RITM-PB', 'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
-    'RITM-C':{'spread': 0.0491 + CAS, 'yahoo': 'RITM-PC', 'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
+    # DX-C: Ex-Div is 1st. Pay is 15th.
+    'DX-C':  {'spread': 0.0546 + CAS, 'yahoo': 'DX-PC',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    # RITM: Ex-Div is 1st. Pay is 15th.
+    'RITM-A':{'spread': 0.0580 + CAS, 'yahoo': 'RITM-PA', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
+    'RITM-B':{'spread': 0.0564 + CAS, 'yahoo': 'RITM-PB', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
+    'RITM-C':{'spread': 0.0491 + CAS, 'yahoo': 'RITM-PC', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
+    # MFA-C: Ex-Div is 3rd. Pay is Month-End.
     'MFA-C': {'spread': 0.0534 + CAS, 'yahoo': 'MFA-PC',  'ref_ex': '03/03/2024', 'ref_pay': '03/31/2024'},
-    'CIM-B': {'spread': 0.0580 + CAS, 'yahoo': 'CIM-PB',  'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
-    'CIM-C': {'spread': 0.0507 + CAS, 'yahoo': 'CIM-PC',  'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
-    'CIM-D': {'spread': 0.0497 + CAS, 'yahoo': 'CIM-PD',  'ref_ex': '02/28/2024', 'ref_pay': '03/15/2024'},
-    'CHMI-B':{'spread': 0.0599 + CAS, 'yahoo': 'CHMI-PB', 'ref_ex': '03/14/2024', 'ref_pay': '04/15/2024'},
-    'MITT-C':{'spread': 0.0648 + CAS, 'yahoo': 'MITT-PC', 'ref_ex': '03/14/2024', 'ref_pay': '04/15/2024'},
-    # ADAMM: Spread 6.429% + CAS 0.261% = 6.69%
-    'ADAMM': {'spread': 0.06429 + CAS, 'yahoo': 'ADAMM', 'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
-    # ADAML: Spread 6.13% (Already indexed to SOFR, no CAS)
-    'ADAML': {'spread': 0.0613, 'yahoo': 'ADAML', 'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'}
+    # CIM: Ex-Div is 1st. Pay is 30th (per Col M "2024-03-30").
+    'CIM-B': {'spread': 0.0580 + CAS, 'yahoo': 'CIM-PB',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
+    'CIM-C': {'spread': 0.0507 + CAS, 'yahoo': 'CIM-PC',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
+    'CIM-D': {'spread': 0.0497 + CAS, 'yahoo': 'CIM-PD',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
+    # CHMI-B: Ex-Div is 1st. Pay is 15th.
+    'CHMI-B':{'spread': 0.0599 + CAS, 'yahoo': 'CHMI-PB', 'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    # MITT-C: Ex-Div is Month-End (Spreadsheet says 2026-05-29).
+    'MITT-C':{'spread': 0.0648 + CAS, 'yahoo': 'MITT-PC', 'ref_ex': '02/28/2024', 'ref_pay': '03/17/2024'},
+    # ADAM: ADAMM uses Spread 6.429% + CAS. ADAML is SOFR-native.
+    'ADAMM': {'spread': 0.06429+ CAS, 'yahoo': 'ADAMM',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'ADAML': {'spread': 0.0613,      'yahoo': 'ADAML',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'}
 }
 
 # --- 3. UI SETUP ---
@@ -54,7 +60,6 @@ st.set_page_config(page_title="3M Term SOFR Tracker", layout="wide")
 st.title("📈 3-Month Term SOFR Preferreds")
 
 row1_col1, row1_col2, row1_col3, _ = st.columns([1.5, 1.5, 1.5, 3])
-
 with row1_col1:
     fwd_sofr = st.number_input("Current 3M Term SOFR (%)", value=3.67854, step=0.00001, format="%.5f")
 with row1_col2:
@@ -132,7 +137,6 @@ st.dataframe(
 )
 
 st.divider()
-
 st.subheader(f"Yield Sensitivity (Forward @ {fwd_sofr:.5f}% SOFR)")
 df_sens = pd.DataFrame(sens_rows)
 sens_config = {col: st.column_config.NumberColumn(format="%.2f%%") for col in df_sens.columns if col != "Ticker"}
