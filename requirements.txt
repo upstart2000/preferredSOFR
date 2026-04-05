@@ -2,3 +2,4 @@ streamlit
 pandas
 yfinance
 python-dateutil
+pandas-datareader
