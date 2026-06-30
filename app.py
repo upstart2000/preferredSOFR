@@ -25,24 +25,24 @@ def get_30_360_days(start, end):
 CAS = 0.00261
 
 SOFR_DATA = {
-    'AGNCM': {'spread': 0.0516 + CAS, 'yahoo': 'AGNCM',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
-    'AGNCN': {'spread': 0.0463 + CAS, 'yahoo': 'AGNCN',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
-    'AGNCO': {'spread': 0.0496 + CAS, 'yahoo': 'AGNCO',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
-    'AGNCP': {'spread': 0.0510 + CAS, 'yahoo': 'AGNCP',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCM': {'spread': 0.0433 + CAS, 'yahoo': 'AGNCM',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCN': {'spread': 0.0511 + CAS, 'yahoo': 'AGNCN',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCO': {'spread': 0.0499 + CAS, 'yahoo': 'AGNCO',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'AGNCP': {'spread': 0.0470 + CAS, 'yahoo': 'AGNCP',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
     'NLY-F': {'spread': 0.0499 + CAS, 'yahoo': 'NLY-PF', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
     'NLY-G': {'spread': 0.0417 + CAS, 'yahoo': 'NLY-PG', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
     'NLY-I': {'spread': 0.0499 + CAS, 'yahoo': 'NLY-PI', 'ref_ex': '03/01/2024', 'ref_pay': '03/31/2024'},
     'DX-C':  {'spread': 0.0546 + CAS, 'yahoo': 'DX-PC',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
     'RITM-A':{'spread': 0.0580 + CAS, 'yahoo': 'RITM-PA', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
     'RITM-B':{'spread': 0.0564 + CAS, 'yahoo': 'RITM-PB', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
-    'RITM-C':{'spread': 0.0491 + CAS, 'yahoo': 'RITM-PC', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
+    'RITM-C':{'spread': 0.0497 + CAS, 'yahoo': 'RITM-PC', 'ref_ex': '02/01/2024', 'ref_pay': '02/15/2024'},
     'MFA-C': {'spread': 0.0534 + CAS, 'yahoo': 'MFA-PC',  'ref_ex': '03/03/2024', 'ref_pay': '03/31/2024'},
     'CIM-B': {'spread': 0.0580 + CAS, 'yahoo': 'CIM-PB',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
-    'CIM-C': {'spread': 0.0507 + CAS, 'yahoo': 'CIM-PC',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
-    'CIM-D': {'spread': 0.0497 + CAS, 'yahoo': 'CIM-PD',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
-    'CHMI-B':{'spread': 0.0599 + CAS, 'yahoo': 'CHMI-PB', 'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'CIM-C': {'spread': 0.0474 + CAS, 'yahoo': 'CIM-PC',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
+    'CIM-D': {'spread': 0.0538 + CAS, 'yahoo': 'CIM-PD',  'ref_ex': '03/01/2024', 'ref_pay': '03/30/2024'},
+    'CHMI-B':{'spread': 0.0563 + CAS, 'yahoo': 'CHMI-PB', 'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
     'MITT-C':{'spread': 0.0648 + CAS, 'yahoo': 'MITT-PC', 'ref_ex': '02/28/2024', 'ref_pay': '03/17/2024'},
-    'ADAMM': {'spread': 0.06429+ CAS, 'yahoo': 'ADAMM',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
+    'ADAMM': {'spread': 0.0643 + CAS, 'yahoo': 'ADAMM',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'},
     'ADAML': {'spread': 0.0613,      'yahoo': 'ADAML',  'ref_ex': '04/01/2024', 'ref_pay': '04/15/2024'}
 }
 
