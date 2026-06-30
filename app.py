@@ -91,7 +91,7 @@ for ticker, info in SOFR_DATA.items():
         "Full Qtr Div": (25 * curr_coupon_rate) / 4,
         "Clean Price": clean_p,
         "Curr Yield": yld * 100,
-        "Spread (+CAS)": round(info['spread'] * 100, 2),
+        "Spread (+0.262)": round(info['spread'] * 100, 2),
         "Next Ex-Div": next_ex,
         "Next Pay": next_pay,
         "clean_p_hidden": clean_p, # For sensitivity calc
